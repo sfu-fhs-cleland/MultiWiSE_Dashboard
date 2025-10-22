@@ -297,9 +297,9 @@ fn_compute_metrics <- function(df, exposure_start, exposure_end,
   epi_summary_span <- df %>%
     dplyr::filter(episode_id > 0) %>%
     dplyr::group_by(episode_id) %>%
-    dplyr::summarise(span_weeks = max(week_sequence) - min(week_sequence) + 1, .groups = "drop")
+    dplyr::summarise(active_weeks = n(), .groups = "drop")
   longest_episode_len <- if (nrow(epi_summary_span) > 0)
-    max(epi_summary_span$span_weeks, na.rm = TRUE) else 0
+    max(epi_summary_span$active_weeks, na.rm = TRUE) else 0
   
   # Worst (highest mean) WFS exposure across episodes
   epi_df <- df %>% dplyr::filter(episode_id > 0, is_smoke_impacted == 1)
@@ -418,30 +418,44 @@ fn_plot_time_series_weekly_mean <- function(df, y_limits = NULL,
     non_wfs = dplyr::coalesce(weekly_non_wfs_pm25_avg_i, 0),
     total   = dplyr::coalesce(weekly_pm25_avg_i,         0)
   )
-  epi_spans <- df_plot %>% dplyr::filter(episode_id > 0) %>% dplyr::group_by(episode_id) %>%
-    dplyr::summarise(start = min(start_date, na.rm = TRUE),
-                     end   = max(epiweek_end_date, na.rm = TRUE), .groups = "drop")
-  sev_spans <- df_plot %>% dplyr::filter(severe_episode_id > 0) %>% dplyr::group_by(severe_episode_id) %>%
-    dplyr::summarise(start = min(start_date, na.rm = TRUE),
-                     end   = max(epiweek_end_date, na.rm = TRUE), .groups = "drop")
+
   y_max <- if (is.null(y_limits))
     max(c(df_plot$total, df_plot$non_wfs, df_plot$wfs), na.rm = TRUE) * 1.05 else y_limits[2]
-  ggplot2::ggplot() +
-    ggplot2::geom_rect(data = epi_spans, inherit.aes = FALSE,
-                       ggplot2::aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf,
-                                    fill = "Episode"), alpha = alpha_norm) +
-    ggplot2::geom_rect(data = sev_spans, inherit.aes = FALSE,
-                       ggplot2::aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf,
-                                    fill = "Severe episode"), alpha = alpha_severe) +
+  plot <- ggplot2::ggplot() 
+  
+  if(sum(df_plot$episode_id > 0)) {
+    epi_spans <- df_plot %>% dplyr::filter(episode_id > 0) %>% dplyr::group_by(episode_id) %>%
+      dplyr::summarise(start = min(start_date, na.rm = TRUE),
+                       end   = max(epiweek_end_date, na.rm = TRUE), .groups = "drop")
+    
+    plot <- plot + ggplot2::geom_rect(data = epi_spans, inherit.aes = FALSE,
+                                      ggplot2::aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf,
+                                                   fill = "Episode"), alpha = alpha_norm) 
+  }
+  if(sum(df_plot$severe_episode_id > 0)) {
+    sev_spans <- df_plot %>% dplyr::filter(severe_episode_id > 0) %>% dplyr::group_by(severe_episode_id) %>%
+      dplyr::summarise(start = min(start_date, na.rm = TRUE),
+                       end   = max(epiweek_end_date, na.rm = TRUE), .groups = "drop")
+    
+    plot <- plot + ggplot2::geom_rect(data = sev_spans, inherit.aes = FALSE,
+                                      ggplot2::aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf,
+                                                   fill = "Severe episode"), alpha = alpha_severe)
+  }
+  plot <- plot +
     ggplot2::geom_line(data = df_plot,
                        ggplot2::aes(x = start_date, y = total,   color = "Total"),   linewidth = 0.9) +
     ggplot2::geom_line(data = df_plot,
                        ggplot2::aes(x = start_date, y = non_wfs, color = "Non-WFS"), linewidth = 0.9) +
     ggplot2::geom_line(data = df_plot,
-                       ggplot2::aes(x = start_date, y = wfs,     color = "WFS"),     linewidth = 0.9) +
-    ggplot2::scale_fill_manual(values = c("Episode" = "orange", "Severe episode" = "red3"),
+                       ggplot2::aes(x = start_date, y = wfs,     color = "WFS"),     linewidth = 0.9) 
+  
+  if (sum(df_plot$severe_episode_id > 0) || sum(df_plot$episode_id > 0)) {
+    plot <- plot + ggplot2::scale_fill_manual(values = c("Episode" = "orange", "Severe episode" = "red3"),
                                name = NULL,
-                               guide = ggplot2::guide_legend(override.aes = list(alpha = 0.4))) +
+                               guide = ggplot2::guide_legend(override.aes = list(alpha = 0.4))) 
+  }
+  
+  plot + 
     ggplot2::scale_color_manual(values = c("Total"="black","Non-WFS"=median_range_color,"WFS"=wildfire_attributable_col),
                                 breaks = c("Total","Non-WFS","WFS"),
                                 name   = NULL,
