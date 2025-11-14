@@ -1,6 +1,6 @@
 # ------------------------------------------------------------
 # MutliWiSE Dashboard
-# Updated 22 October 2025
+# Updated 13 November 2025
 # ------------------------------------------------------------
 
 options(shiny.maxRequestSize = 5000e6)  # NOTE: Using 5 GB upload cap for dashboard to run locally
@@ -689,8 +689,12 @@ theme <- bslib::bs_add_rules(theme, "
 
   .muted { opacity: .25 !important; filter: saturate(0.2); pointer-events: none !important; }
 
-  /* Hide Shiny's default fileInput progress/error strip */
-  #pm_file_progress { display: none !important; }
+  #pm_file_progress.progress {
+    --bs-progress-height: 1.6rem !important; height: 1.6rem !important; border-radius: 0 !important; margin-top: 6px !important;
+  }
+  #pm_file_progress .progress-bar {
+    height: 1.6rem !important; line-height: 1.6rem !important; font-size: 0.95rem !important; font-weight: 600 !important; letter-spacing: 0.2px !important; color: #fff !important; white-space: nowrap !important;
+  }
 
   #profile_type .shiny-options-group { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
   #profile_type .form-check-inline { margin-right: 18px; }
@@ -1280,7 +1284,7 @@ server <- function(input, output, session) {
         i <- 0L
         for (id in all_ids) {
           i <- i + 1L
-          incProgress(1/n, detail = sprintf("[%d of %d] IDs processed...", i, n))
+          incProgress(1/n, detail = sprintf("%d of %d IDs processed...", i, n))
           d <- dt[ID == id]
           warns <- character(); errs <- character()
           
