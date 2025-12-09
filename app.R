@@ -499,7 +499,7 @@ fn_plot_histogram <- function(df, binwidth = 8) {
     ggplot2::geom_vline(ggplot2::aes(xintercept = counterfactual, color = "Counterfactual"),
                         linewidth = 0.9) +
     ggplot2::scale_fill_manual(values = c("-2 < Z-Score < 2" = "yellow"), name = NULL) +
-    ggplot2::scale_color_manual(values = c("Median" = "#0085E4"), name = NULL) +
+    ggplot2::scale_color_manual(values = c("Counterfactual" = "#0085E4"), name = NULL) +
     ggplot2::guides(fill = ggplot2::guide_legend(order = 1),
                     color = ggplot2::guide_legend(order = 2)) +
     ggplot2::scale_x_continuous(limits = c(0, x_max), expand = c(0, 0)) +
