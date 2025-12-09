@@ -471,6 +471,7 @@ fn_plot_histogram <- function(df, binwidth = 8) {
   # Distribution of weekly sums with the stable-Z band highlighted
   slopes <- df$weekly_pm25_sum_i
   z_vals <- df$modified_z
+  counterfactual <- median(df[df$modified_z >= -2 & df$modified_z <= 2,]$weekly_pm25_sum_i, na.rm = TRUE)
   stable_idx <- which(!is.na(z_vals) & z_vals >= -2 & z_vals <= 2)
   min_slope  <- if (length(stable_idx)) min(slopes[stable_idx]) else NA_real_
   max_slope  <- if (length(stable_idx)) max(slopes[stable_idx]) else NA_real_
@@ -495,7 +496,7 @@ fn_plot_histogram <- function(df, binwidth = 8) {
       ggplot2::geom_vline(xintercept = min_slope, linetype = "dashed", linewidth = 0.4) } +
     { if (!is.na(max_slope))
       ggplot2::geom_vline(xintercept = max_slope, linetype = "dashed", linewidth = 0.4) } +
-    ggplot2::geom_vline(ggplot2::aes(xintercept = median(slopes, na.rm = TRUE), color = "Median"),
+    ggplot2::geom_vline(ggplot2::aes(xintercept = counterfactual, color = "Counterfactual"),
                         linewidth = 0.9) +
     ggplot2::scale_fill_manual(values = c("-2 < Z-Score < 2" = "yellow"), name = NULL) +
     ggplot2::scale_color_manual(values = c("Median" = "#0085E4"), name = NULL) +
