@@ -1022,7 +1022,7 @@ ui <- navbarPage(
               style = "padding:16px;",
               tags$p("Download the full README"),
               tags$a(
-                href = "ReadMe_102225.pdf", target = "_blank", download = NA,
+                href = "ReadMe_111325.pdf", target = "_blank", download = NA,
                 download = "MultiWiSE_Dashboard_README.pdf",
                 class = "btn btn-primary btn-lg w-100",
                 HTML("<b>Download README (PDF)</b>")
