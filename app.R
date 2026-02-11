@@ -408,17 +408,17 @@ fn_plot_cumulative_sum_by_year <- function(df, y_limits = NULL) {
 }
 
 fn_plot_time_series_weekly_mean <- function(df, y_limits = NULL,
-                                            alpha_norm = 0.15,
+                                            alpha_norm = 0.20,
                                             alpha_severe = 0.20,
-                                            fill_norm = "orange",
-                                            fill_severe = "red3") {
+                                            fill_norm = "khaki2",
+                                            fill_severe = "orange2") {
   # Weekly means (µg/m^3) with episode shading
   df_plot <- df %>% dplyr::mutate(
     wfs     = dplyr::coalesce(weekly_wfs_pm25_avg_i,     0),
     non_wfs = dplyr::coalesce(weekly_non_wfs_pm25_avg_i, 0),
     total   = dplyr::coalesce(weekly_pm25_avg_i,         0)
   )
-
+  
   y_max <- if (is.null(y_limits))
     max(c(df_plot$total, df_plot$non_wfs, df_plot$wfs), na.rm = TRUE) * 1.05 else y_limits[2]
   plot <- ggplot2::ggplot() 
@@ -429,7 +429,7 @@ fn_plot_time_series_weekly_mean <- function(df, y_limits = NULL,
                        end   = max(epiweek_end_date, na.rm = TRUE), .groups = "drop")
     
     plot <- plot + ggplot2::geom_rect(data = epi_spans, inherit.aes = FALSE,
-                                      ggplot2::aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf,
+                                      ggplot2::aes(xmin = start-3, xmax = end+3, ymin = -Inf, ymax = Inf,
                                                    fill = "Episode"), alpha = alpha_norm) 
   }
   if(sum(df_plot$severe_episode_id > 0)) {
@@ -438,7 +438,7 @@ fn_plot_time_series_weekly_mean <- function(df, y_limits = NULL,
                        end   = max(epiweek_end_date, na.rm = TRUE), .groups = "drop")
     
     plot <- plot + ggplot2::geom_rect(data = sev_spans, inherit.aes = FALSE,
-                                      ggplot2::aes(xmin = start, xmax = end, ymin = -Inf, ymax = Inf,
+                                      ggplot2::aes(xmin = start-3, xmax = end+3, ymin = -Inf, ymax = Inf,
                                                    fill = "Severe episode"), alpha = alpha_severe)
   }
   plot <- plot +
@@ -450,9 +450,9 @@ fn_plot_time_series_weekly_mean <- function(df, y_limits = NULL,
                        ggplot2::aes(x = start_date, y = wfs,     color = "WFS"),     linewidth = 0.9) 
   
   if (sum(df_plot$severe_episode_id > 0) || sum(df_plot$episode_id > 0)) {
-    plot <- plot + ggplot2::scale_fill_manual(values = c("Episode" = "orange", "Severe episode" = "red3"),
-                               name = NULL,
-                               guide = ggplot2::guide_legend(override.aes = list(alpha = 0.4))) 
+    plot <- plot + ggplot2::scale_fill_manual(values = c("Episode" = fill_norm, "Severe episode" = fill_severe),
+                                              name = NULL,
+                                              guide = ggplot2::guide_legend(override.aes = list(alpha = 0.4))) 
   }
   
   plot + 
@@ -467,11 +467,11 @@ fn_plot_time_series_weekly_mean <- function(df, y_limits = NULL,
     .fn_plot_theme_small()
 }
 
+
 fn_plot_histogram <- function(df, binwidth = 8) {
   # Distribution of weekly sums with the stable-Z band highlighted
   slopes <- df$weekly_pm25_sum_i
   z_vals <- df$modified_z
-  counterfactual <- median(df[df$modified_z >= -2 & df$modified_z <= 2,]$weekly_pm25_sum_i, na.rm = TRUE)
   stable_idx <- which(!is.na(z_vals) & z_vals >= -2 & z_vals <= 2)
   min_slope  <- if (length(stable_idx)) min(slopes[stable_idx]) else NA_real_
   max_slope  <- if (length(stable_idx)) max(slopes[stable_idx]) else NA_real_
@@ -496,10 +496,10 @@ fn_plot_histogram <- function(df, binwidth = 8) {
       ggplot2::geom_vline(xintercept = min_slope, linetype = "dashed", linewidth = 0.4) } +
     { if (!is.na(max_slope))
       ggplot2::geom_vline(xintercept = max_slope, linetype = "dashed", linewidth = 0.4) } +
-    ggplot2::geom_vline(ggplot2::aes(xintercept = counterfactual, color = "Counterfactual"),
+    ggplot2::geom_vline(ggplot2::aes(xintercept = median(slopes, na.rm = TRUE), color = "Median"),
                         linewidth = 0.9) +
     ggplot2::scale_fill_manual(values = c("-2 < Z-Score < 2" = "yellow"), name = NULL) +
-    ggplot2::scale_color_manual(values = c("Counterfactual" = "#0085E4"), name = NULL) +
+    ggplot2::scale_color_manual(values = c("Median" = "#0085E4"), name = NULL) +
     ggplot2::guides(fill = ggplot2::guide_legend(order = 1),
                     color = ggplot2::guide_legend(order = 2)) +
     ggplot2::scale_x_continuous(limits = c(0, x_max), expand = c(0, 0)) +
@@ -514,13 +514,19 @@ fn_plot_histogram <- function(df, binwidth = 8) {
 
 fn_build_combined_plot <- function(id, df) {
   # Stack cumulative, weekly-average, and distribution panels into one figure
-  p1 <- fn_plot_cumulative_sum_by_year(df)
-  p2 <- fn_plot_time_series_weekly_mean(df)
-  p3 <- fn_plot_histogram(df)
+  p1 <- fn_plot_cumulative_sum_by_year(df) + theme(axis.title = ggplot2::element_text(size = 20), 
+                                                   axis.text = ggplot2::element_text(size = 16), 
+                                                   legend.text = ggplot2::element_text(size = 18))
+  p2 <- fn_plot_time_series_weekly_mean(df) + theme(axis.title = ggplot2::element_text(size = 20), 
+                                                    axis.text = ggplot2::element_text(size = 16), 
+                                                    legend.text = ggplot2::element_text(size = 18))
+  p3 <- fn_plot_histogram(df) + theme(axis.title = ggplot2::element_text(size = 20), 
+                                      axis.text = ggplot2::element_text(size = 16), 
+                                      legend.text = ggplot2::element_text(size = 18))
   (p1 / p2 / p3) +
     patchwork::plot_annotation(
       title = id,
-      theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 20, face = "bold", hjust = 0.5))
+      theme = ggplot2::theme(plot.title = ggplot2::element_text(size = 26, face = "bold", hjust = 0.5))
     )
 }
 
