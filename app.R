@@ -1,6 +1,6 @@
 # ------------------------------------------------------------
 # MultiWiSE Dashboard
-# Updated 13 November 2025
+# Updated 11 February 2026
 # ------------------------------------------------------------
 
 options(shiny.maxRequestSize = 5000e6)  # NOTE: Using 5 GB upload cap for dashboard to run locally
@@ -1398,11 +1398,11 @@ server <- function(input, output, session) {
         req(length(v$ids) > 0, input$sel_id, input$profile_type)
         df <- v$data_by_id[[input$sel_id]]; req(!is.null(df))
         if (input$profile_type == "cumulative") {
-          print(fn_plot_cumulative_sum_by_year(df))
+          fn_plot_cumulative_sum_by_year(df)
         } else if (input$profile_type == "weekly_avg") {
-          print(fn_plot_time_series_weekly_mean(df))
+          fn_plot_time_series_weekly_mean(df)
         } else {
-          print(fn_plot_histogram(df))
+          fn_plot_histogram(df)
         }
       }, res = 120)
       
